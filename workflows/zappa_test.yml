@@ -1,0 +1,43 @@
+name: Test Zappa
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:  # permite ejecutarlo manualmente desde GitHub Actions
+
+jobs:
+  test-zappa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install zappa
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Dry-run Zappa deploy
+        run: |
+          zappa status dev || echo "No deployment yet. Ready to deploy."
+          # Para un test real podrías usar:
+          # zappa deploy staging --disable-keep-warm
+          # zappa update staging
+
+      - name: List buckets (debug AWS)
+        run: aws s3 ls
